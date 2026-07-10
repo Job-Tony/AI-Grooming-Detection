@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.exceptions.handlers import register_exception_handlers
 
 from app.api.router import api_router
 from app.config.logging_config import logger

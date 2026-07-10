@@ -1,9 +1,22 @@
 from sqlalchemy import create_engine
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
+
 from app.config.settings import settings
 
-print("DATABASE_URL =", repr(settings.DATABASE_URL))
+
+class Base(DeclarativeBase):
+    """Base class for all SQLAlchemy models."""
+    pass
+
 
 engine = create_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
+)
+
+
+SessionLocal = sessionmaker(
+    bind=engine,
+    autoflush=False,
+    autocommit=False,
 )
