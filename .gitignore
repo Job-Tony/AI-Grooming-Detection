@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+venv/
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# AI model checkpoints
+backend/checkpoints/
+*.pt
+*.pth
+
+# Generated datasets
+backend/ai/datasets/processed/
+
+# Uploaded chats
+backend/storage/
+
+# Raw datasets
+datasets/
+
+# Test cache
+.pytest_cache/

@@ -7,7 +7,10 @@ from alembic import context
 from app.database.database import Base
 from app.config.settings import settings
 
-from app.models import User
+from app.models.user import User
+from app.models.upload import Upload
+from app.models.conversation import Conversation
+from app.models.chat_message import ChatMessage
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

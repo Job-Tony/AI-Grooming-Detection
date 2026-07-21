@@ -12,6 +12,8 @@ app = FastAPI(
     description="AI-assisted moderation platform using NLP and Explainable Deep Learning",
 )
 
+register_exception_handlers(app)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.FRONTEND_URL],
