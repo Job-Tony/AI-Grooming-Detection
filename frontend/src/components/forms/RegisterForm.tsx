@@ -1,16 +1,28 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  User,
+  Mail,
+  UserPlus,
+  Loader2,
+  CheckCircle2,
+} from "lucide-react";
 
 import { useAuth } from "@/context/AuthContext";
+import PasswordInput from "@/components/auth/PasswordInput";
 
 const schema = z
   .object({
-    username: z.string().min(3, "Username must be at least 3 characters."),
+    username: z
+      .string()
+      .min(3, "Username must be at least 3 characters."),
     email: z.string().email("Enter a valid email."),
-    password: z.string().min(6, "Password must be at least 6 characters."),
+    password: z
+      .string()
+      .min(6, "Password must be at least 6 characters."),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -46,82 +58,156 @@ export default function RegisterForm() {
         password: data.password,
       });
 
-      setSuccessMessage("Registration successful! Redirecting to login...");
+      setSuccessMessage(
+        "Registration successful! Redirecting to login..."
+      );
 
       setTimeout(() => navigate("/login"), 1500);
     } catch {
-      setServerError("Registration failed. Please try again.");
+      setServerError(
+        "Registration failed. Please try again."
+      );
     }
   }
 
   return (
-    <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-lg">
-      <h2 className="mb-6 text-center text-3xl font-bold">
-        Create Account
-      </h2>
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="space-y-6"
+    >
+      {/* Username */}
 
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="space-y-5"
-      >
-        <div>
-          <label>Username</label>
-          <input
-            {...register("username")}
-            className="mt-1 w-full rounded border p-2"
+      <div>
+        <label className="mb-2 block text-sm font-medium text-slate-300">
+          Username
+        </label>
+
+        <div className="relative">
+          <User
+            size={18}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
           />
-          <p className="text-red-600">{errors.username?.message}</p>
+
+          <input
+            type="text"
+            placeholder="Choose a username"
+            {...register("username")}
+            className={`w-full rounded-xl border bg-slate-950 py-3 pl-12 pr-4 text-white outline-none transition ${
+              errors.username
+                ? "border-red-500"
+                : "border-slate-700 focus:border-blue-500"
+            }`}
+          />
         </div>
 
-        <div>
-          <label>Email</label>
+        {errors.username && (
+          <p className="mt-2 text-sm text-red-400">
+            {errors.username.message}
+          </p>
+        )}
+      </div>
+
+      {/* Email */}
+
+      <div>
+        <label className="mb-2 block text-sm font-medium text-slate-300">
+          Email Address
+        </label>
+
+        <div className="relative">
+          <Mail
+            size={18}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
+          />
+
           <input
             type="email"
+            placeholder="Enter your email"
             {...register("email")}
-            className="mt-1 w-full rounded border p-2"
+            className={`w-full rounded-xl border bg-slate-950 py-3 pl-12 pr-4 text-white outline-none transition ${
+              errors.email
+                ? "border-red-500"
+                : "border-slate-700 focus:border-blue-500"
+            }`}
           />
-          <p className="text-red-600">{errors.email?.message}</p>
         </div>
 
-        <div>
-          <label>Password</label>
-          <input
-            type="password"
-            {...register("password")}
-            className="mt-1 w-full rounded border p-2"
-          />
-          <p className="text-red-600">{errors.password?.message}</p>
-        </div>
-
-        <div>
-          <label>Confirm Password</label>
-          <input
-            type="password"
-            {...register("confirmPassword")}
-            className="mt-1 w-full rounded border p-2"
-          />
-          <p className="text-red-600">
-            {errors.confirmPassword?.message}
-          </p>
-        </div>
-
-        {serverError && (
-          <p className="text-center text-red-600">{serverError}</p>
-        )}
-
-        {successMessage && (
-          <p className="text-center text-green-600">
-            {successMessage}
+        {errors.email && (
+          <p className="mt-2 text-sm text-red-400">
+            {errors.email.message}
           </p>
         )}
+      </div>
 
-        <button
-          disabled={isSubmitting}
-          className="w-full rounded bg-green-600 py-2 text-white hover:bg-green-700"
+      {/* Password */}
+
+      <PasswordInput
+        label="Password"
+        placeholder="Create a password"
+        registration={register("password")}
+        error={errors.password?.message}
+      />
+
+      {/* Confirm Password */}
+
+      <PasswordInput
+        label="Confirm Password"
+        placeholder="Re-enter your password"
+        registration={register("confirmPassword")}
+        error={errors.confirmPassword?.message}
+      />
+
+      {/* Error */}
+
+      {serverError && (
+        <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-center text-sm text-red-300">
+          {serverError}
+        </div>
+      )}
+
+      {/* Success */}
+
+      {successMessage && (
+        <div className="flex items-center justify-center gap-2 rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-300">
+          <CheckCircle2 size={18} />
+          {successMessage}
+        </div>
+      )}
+
+      {/* Button */}
+
+      <button
+        type="submit"
+        disabled={isSubmitting}
+        className="flex w-full items-center justify-center gap-3 rounded-xl bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-70"
+      >
+        {isSubmitting ? (
+          <>
+            <Loader2
+              size={20}
+              className="animate-spin"
+            />
+            Creating Account...
+          </>
+        ) : (
+          <>
+            <UserPlus size={20} />
+            Create Account
+          </>
+        )}
+      </button>
+
+      {/* Login */}
+
+      <div className="border-t border-slate-800 pt-6 text-center text-sm text-slate-400">
+        Already have an account?{" "}
+        <Link
+          to="/login"
+          className="font-semibold text-blue-400 hover:text-blue-300"
         >
-          {isSubmitting ? "Creating Account..." : "Register"}
-        </button>
-      </form>
-    </div>
+          Login
+        </Link>
+      </div>
+    </form>
   );
 }

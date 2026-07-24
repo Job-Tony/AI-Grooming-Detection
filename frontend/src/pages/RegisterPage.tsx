@@ -1,9 +1,13 @@
+import AuthLayout from "@/components/auth/AuthLayout";
 import RegisterForm from "@/components/forms/RegisterForm";
 
 export default function RegisterPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100">
+    <AuthLayout
+      title="Create Administrator Account"
+      subtitle="Register to access SafeChat AI"
+    >
       <RegisterForm />
-    </div>
+    </AuthLayout>
   );
 }

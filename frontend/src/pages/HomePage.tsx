@@ -1,9 +1,21 @@
-export default function HomePage() {
+import Navbar from "../components/home/Navbar";
+import Hero from "../components/home/Hero";
+import Features from "../components/home/Features";
+import HowItWorks from "../components/home/HowItWorks";
+import TechStack from "../components/home/TechStack";
+import Footer from "../components/home/Footer";
+
+const HomePage = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <h1 className="text-4xl font-bold">
-        AI Grooming Detection System
-      </h1>
-    </div>
+    <>
+      <Navbar />
+      <Hero />
+      <Features />
+      <HowItWorks />
+      <TechStack />
+      <Footer />
+    </>
   );
-}
+};
+
+export default HomePage;

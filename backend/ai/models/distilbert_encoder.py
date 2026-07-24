@@ -21,10 +21,13 @@ class DistilBERTEncoder(nn.Module):
     def __init__(self):
         super().__init__()
 
+        print("Loading DistilBERT...")
+
         self.encoder = DistilBertModel.from_pretrained(
             MODEL_NAME
         )
 
+        print("DistilBERT loaded successfully.")
     def forward(
         self,
         *,
