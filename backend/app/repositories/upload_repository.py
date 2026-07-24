@@ -1,9 +1,10 @@
 from uuid import UUID
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.models.base import UploadStatus
+from app.models.conversation import Conversation
 from app.models.upload import Upload
 
 
@@ -17,16 +18,32 @@ class UploadRepository:
         self.db.refresh(upload)
         return upload
 
-    def get_upload_by_id(self, upload_id: UUID) -> Upload | None:
-        stmt = select(Upload).where(Upload.id == upload_id)
+    def get_upload_by_id(
+        self,
+        upload_id: UUID,
+    ) -> Upload | None:
+        stmt = (
+            select(Upload)
+            .options(
+                joinedload(Upload.conversation).joinedload(
+                    Conversation.messages
+                )
+            )
+            .where(Upload.id == upload_id)
+        )
+
         return self.db.scalar(stmt)
 
-    def get_uploads_by_user(self, user_id: UUID) -> list[Upload]:
+    def get_uploads_by_user(
+        self,
+        user_id: UUID,
+    ) -> list[Upload]:
         stmt = (
             select(Upload)
             .where(Upload.user_id == user_id)
             .order_by(Upload.created_at.desc())
         )
+
         return list(self.db.scalars(stmt).all())
 
     def update_upload_status(
@@ -39,6 +56,9 @@ class UploadRepository:
         self.db.refresh(upload)
         return upload
 
-    def delete_upload(self, upload: Upload) -> None:
+    def delete_upload(
+        self,
+        upload: Upload,
+    ) -> None:
         self.db.delete(upload)
         self.db.commit()

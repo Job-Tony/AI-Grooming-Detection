@@ -1,9 +1,12 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, File, UploadFile, status
 from sqlalchemy.orm import Session
 
-from app.dependencies.database import get_db
 from app.dependencies.auth import get_current_user
+from app.dependencies.database import get_db
 from app.models.user import User
+from app.schemas.conversation import UploadedConversationResponse
 from app.schemas.upload import UploadResponse
 from app.services.upload_service import UploadService
 
@@ -40,3 +43,22 @@ def upload_chat(
         status=upload.status,
         created_at=upload.created_at,
     )
+
+
+@router.get(
+    "/{upload_id}",
+    response_model=UploadedConversationResponse,
+    status_code=status.HTTP_200_OK,
+)
+def get_uploaded_conversation(
+    upload_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Retrieve the parsed conversation associated with an uploaded file.
+    """
+
+    service = UploadService(db)
+
+    return service.get_uploaded_conversation(upload_id)

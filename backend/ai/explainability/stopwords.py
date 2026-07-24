@@ -1,0 +1,148 @@
+"""
+Stop words used by the explainability module.
+
+These words carry little semantic meaning for grooming detection and
+are removed before generating explanations.
+"""
+
+from __future__ import annotations
+
+STOP_WORDS: set[str] = {
+    # Articles
+    "a",
+    "an",
+    "the",
+
+    # Pronouns
+    "i",
+    "i'm",
+    "me",
+    "my",
+    "mine",
+    "myself",
+    "you",
+    "your",
+    "yours",
+    "yourself",
+    "we",
+    "our",
+    "ours",
+    "ourselves",
+    "he",
+    "his",
+    "him",
+    "she",
+    "her",
+    "hers",
+    "they",
+    "them",
+    "their",
+    "theirs",
+
+    # Auxiliary verbs
+    "am",
+    "is",
+    "are",
+    "was",
+    "were",
+    "be",
+    "been",
+    "being",
+    "have",
+    "has",
+    "had",
+    "do",
+    "does",
+    "did",
+    "can",
+    "could",
+    "will",
+    "would",
+    "shall",
+    "should",
+    "may",
+    "might",
+    "must",
+
+    # Common connectors
+    "and",
+    "or",
+    "but",
+    "if",
+    "then",
+    "than",
+    "so",
+    "because",
+    "of",
+    "to",
+    "for",
+    "from",
+    "in",
+    "on",
+    "at",
+    "by",
+    "with",
+    "about",
+    "into",
+    "after",
+    "before",
+    "over",
+    "under",
+
+    # Greetings
+    "hello",
+    "hi",
+    "hey",
+    "good",
+    "morning",
+    "afternoon",
+    "evening",
+
+    # Politeness
+    "thanks",
+    "thank",
+    "please",
+    "sorry",
+    "okay",
+    "ok",
+    "nice",
+    "great",
+    "fine",
+    "cool",
+
+    # Fillers
+    "hmm",
+    "uh",
+    "um",
+    "haha",
+    "lol",
+    "yes",
+    "yeah",
+    "no",
+    "nope",
+    "yep",
+
+    # Contractions
+    "it's",
+    "that's",
+    "there's",
+    "what's",
+    "who's",
+    "you're",
+    "we're",
+    "they're",
+    "i've",
+    "you've",
+    "we've",
+    "don't",
+    "doesn't",
+    "didn't",
+    "won't",
+    "can't",
+
+    # Special tokens
+    "[cls]",
+    "[sep]",
+    "[pad]",
+    "[unk]",
+}

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import string
 from collections.abc import Sequence
 
 import numpy as np
@@ -10,6 +11,7 @@ from ai.explainability.schemas import (
     ImportanceLevel,
     WordAttribution,
 )
+from ai.explainability.stopwords import STOP_WORDS
 from ai.explainability.utils import (
     filter_words,
     merge_tokens,
@@ -43,11 +45,24 @@ class ExplanationFormatter:
         }[level]
 
     @staticmethod
+    def _clean_token(token: str) -> str:
+        """
+        Clean SHAP tokens before displaying them.
+        """
+
+        token = token.strip()
+
+        token = token.strip(string.punctuation)
+
+        return token
+
+    @staticmethod
     def _summary(words: list[WordAttribution]) -> str:
 
         if not words:
             return (
-                "No significant words contributed strongly to the prediction."
+                "The model did not identify any highly influential "
+                "keywords for this prediction."
             )
 
         top = [w.token for w in words[:5]]
@@ -65,9 +80,9 @@ class ExplanationFormatter:
             )
 
         return (
-            "The model identified this conversation as potentially risky "
-            f"because words such as {keywords} had the strongest positive "
-            "influence on the prediction."
+            "The model classified this conversation as potentially risky "
+            "because the following keywords had the strongest influence on "
+            f"its decision: {keywords}."
         )
 
     @staticmethod
@@ -91,16 +106,36 @@ class ExplanationFormatter:
 
         words: list[WordAttribution] = []
 
+        seen: set[str] = set()
+
         for token, raw, norm in zip(tokens, values, normalized):
 
-            token = str(token).strip()
+            token = ExplanationFormatter._clean_token(str(token))
 
             if not token:
                 continue
 
-            importance = ExplanationFormatter._importance(
-                float(norm)
-            )
+            token_lower = token.lower()
+
+            # Ignore stop words
+            if token_lower in STOP_WORDS:
+                continue
+
+            # Ignore punctuation
+            if all(c in string.punctuation for c in token):
+                continue
+
+            # Ignore single-character tokens
+            if len(token) <= 1:
+                continue
+
+            # Ignore duplicates
+            if token_lower in seen:
+                continue
+
+            seen.add(token_lower)
+
+            importance = ExplanationFormatter._importance(float(norm))
 
             words.append(
                 WordAttribution(
@@ -108,9 +143,7 @@ class ExplanationFormatter:
                     score=float(raw),
                     normalized_score=float(norm),
                     importance=importance,
-                    color=ExplanationFormatter._color(
-                        importance
-                    ),
+                    color=ExplanationFormatter._color(importance),
                 )
             )
 
@@ -121,6 +154,12 @@ class ExplanationFormatter:
             minimum_score=0.05,
             positive_only=True,
             top_k=10,
+        )
+
+        # Highest importance first
+        words.sort(
+            key=lambda word: word.normalized_score,
+            reverse=True,
         )
 
         return ExplanationResult(

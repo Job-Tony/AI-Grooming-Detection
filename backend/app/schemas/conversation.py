@@ -34,3 +34,10 @@ class ConversationResponse(ConversationBase):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class UploadedConversationResponse(BaseModel):
+    upload_id: uuid.UUID
+    filename: str
+    conversation: list[str]
+    message_count: int
+    created_at: datetime

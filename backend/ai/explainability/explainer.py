@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from threading import Lock
 from typing import Sequence
 
 import numpy as np
@@ -15,8 +16,12 @@ class SHAPExplainer:
     """
     SHAP explainer for the grooming detection model.
 
-    This class explains model predictions by assigning an
-    importance value to each token in the input conversation.
+    Generates token-level explanations for a conversation using
+    SHAP's Text masker.
+
+    A threading lock is used because SHAP's Text explainer is not
+    thread-safe. This prevents concurrent requests from causing
+    intermittent failures.
     """
 
     def __init__(
@@ -40,6 +45,9 @@ class SHAPExplainer:
             self._predict,
             self.masker,
         )
+
+        # Prevent concurrent SHAP executions.
+        self._lock = Lock()
 
     @torch.no_grad()
     def _predict(
@@ -84,7 +92,7 @@ class SHAPExplainer:
             dim=1,
         )
 
-        return probabilities.cpu().numpy()
+        return probabilities.detach().cpu().numpy()
 
     def explain(
         self,
@@ -92,6 +100,24 @@ class SHAPExplainer:
     ) -> shap.Explanation:
         """
         Generate SHAP values for a conversation.
+
+        A lock is used because SHAP's text explainer is not
+        thread-safe.
         """
 
-        return self.explainer([conversation])
+        with self._lock:
+            try:
+                return self.explainer([conversation])
+
+            except Exception as e:
+                import traceback
+
+                print("\n" + "=" * 80)
+                print("SHAP EXPLANATION FAILED")
+                print("=" * 80)
+                print(type(e).__name__)
+                print(str(e))
+                traceback.print_exc()
+                print("=" * 80 + "\n")
+
+                raise

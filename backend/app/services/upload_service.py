@@ -1,6 +1,7 @@
 from pathlib import Path
+from uuid import UUID
 
-from fastapi import UploadFile
+from fastapi import HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.models.base import UploadStatus
@@ -81,3 +82,41 @@ class UploadService:
                 file_path.unlink()
 
             raise
+
+    def get_uploaded_conversation(
+        self,
+        upload_id: UUID,
+    ):
+        """
+        Retrieve the parsed conversation associated with an upload.
+        """
+
+        upload = self.repository.get_upload_by_id(upload_id)
+
+        if upload is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Upload not found.",
+            )
+
+        if upload.conversation is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Conversation not found.",
+            )
+
+        messages = sorted(
+            upload.conversation.messages,
+            key=lambda message: message.message_order,
+        )
+
+        return {
+            "upload_id": upload.id,
+            "filename": upload.original_filename,
+            "conversation": [
+                message.message
+                for message in messages
+            ],
+            "message_count": upload.conversation.message_count,
+            "created_at": upload.created_at,
+        }
