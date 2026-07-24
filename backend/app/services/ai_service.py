@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import time
+from typing import TYPE_CHECKING
 
-from ai.inference.predictor import GroomingPredictor
+if TYPE_CHECKING:
+    from ai.inference.predictor import GroomingPredictor
 
 MODEL_NAME = "DistilBERT + BiLSTM"
 MODEL_VERSION = "1.0.0"
@@ -13,10 +15,29 @@ MAX_SEQUENCE_LENGTH = 512
 class AIService:
     """
     Service layer for AI inference.
+
+    The AI model is loaded lazily when it is first needed.
     """
 
     def __init__(self) -> None:
-        self.predictor = GroomingPredictor()
+        self._predictor: GroomingPredictor | None = None
+
+    @property
+    def predictor(self) -> GroomingPredictor:
+        """
+        Lazily create the predictor.
+
+        Heavy AI libraries (PyTorch, Transformers, SHAP, etc.)
+        are imported only when the first prediction request
+        is received.
+        """
+
+        if self._predictor is None:
+            from ai.inference.predictor import GroomingPredictor
+
+            self._predictor = GroomingPredictor()
+
+        return self._predictor
 
     # ------------------------------------------------------------------
     # Basic Prediction
@@ -159,7 +180,8 @@ class AIService:
             "prediction_timeline": prediction_timeline,
             "explanation_timeline": explanation_timeline,
         }
-        # ------------------------------------------------------------------
+
+    # ------------------------------------------------------------------
     # Prediction Timeline
     # ------------------------------------------------------------------
 
@@ -180,8 +202,6 @@ class AIService:
 
         total_messages = len(conversation)
 
-        # Predict every message for short conversations.
-        # Predict every 5 messages for longer conversations.
         step = 1 if total_messages <= 20 else 5
 
         checkpoints = list(
@@ -226,7 +246,7 @@ class AIService:
 
     def get_model_info(self) -> dict:
         """
-        Return metadata about the loaded AI model.
+        Return metadata about the AI model.
         """
 
         return {
@@ -237,12 +257,17 @@ class AIService:
             ),
             "best_validation_f1": BEST_F1,
             "max_sequence_length": MAX_SEQUENCE_LENGTH,
-            "device": str(self.predictor.device),
+            "device": (
+                str(self._predictor.device)
+                if self._predictor is not None
+                else "Not Loaded"
+            ),
             "labels": [
                 "LOW_RISK",
                 "MEDIUM_RISK",
                 "HIGH_RISK",
             ],
+            "model_loaded": self._predictor is not None,
         }
 
 
