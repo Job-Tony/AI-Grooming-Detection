@@ -1,6 +1,6 @@
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
-import { UseFormRegisterReturn } from "react-hook-form";
+import type { UseFormRegisterReturn } from "react-hook-form";
 
 interface PasswordInputProps {
   label: string;
