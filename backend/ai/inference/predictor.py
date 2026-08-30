@@ -24,7 +24,7 @@ class GroomingPredictor:
 
     def __init__(
         self,
-        checkpoint_path: str | Path = "checkpoints/grooming_model.pt",
+        checkpoint_path: str | Path = "/data/grooming_model.pt",
     ) -> None:
 
         self.device = torch.device(DEVICE)
