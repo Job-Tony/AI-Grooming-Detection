@@ -19,7 +19,7 @@ class SHAPExplainer:
     Generates token-level explanations for a conversation using
     SHAP's Text masker.
 
-    A threading lock is used because SHAP's Text explainer is not
+    A threading lock is used because SHAP's text explainer is not
     thread-safe. This prevents concurrent requests from causing
     intermittent failures.
     """
@@ -37,16 +37,27 @@ class SHAPExplainer:
 
         self.model.eval()
 
+        # ---------------------------------------------------------
+        # SHAP text masker
+        # ---------------------------------------------------------
+
         self.masker = shap.maskers.Text(
             self.preprocessor.tokenizer
         )
+
+        # ---------------------------------------------------------
+        # SHAP explainer
+        # ---------------------------------------------------------
 
         self.explainer = shap.Explainer(
             self._predict,
             self.masker,
         )
 
-        # Prevent concurrent SHAP executions.
+        # ---------------------------------------------------------
+        # SHAP is not thread-safe.
+        # ---------------------------------------------------------
+
         self._lock = Lock()
 
     @torch.no_grad()
@@ -101,15 +112,66 @@ class SHAPExplainer:
         """
         Generate SHAP values for a conversation.
 
+        SHAP TextExplainer can become extremely expensive for long
+        conversations. Therefore, the number of evaluations is
+        limited to keep API requests practical.
+
         A lock is used because SHAP's text explainer is not
         thread-safe.
         """
 
         with self._lock:
+
             try:
-                return self.explainer([conversation])
+
+                # -------------------------------------------------
+                # Determine the number of model tokens.
+                # -------------------------------------------------
+
+                tokenized = self.preprocessor.tokenizer(
+                    conversation,
+                    truncation=True,
+                    max_length=self.preprocessor.max_length,
+                    add_special_tokens=False,
+                )
+
+                num_tokens = len(
+                    tokenized["input_ids"]
+                )
+
+                # -------------------------------------------------
+                # Limit SHAP evaluations.
+                #
+                # At least enough evaluations for a small text,
+                # but never exceed 500.
+                # -------------------------------------------------
+
+                max_evals = min(
+                    max(
+                        2 * num_tokens + 1,
+                        100,
+                    ),
+                    500,
+                )
+
+                print("=" * 80)
+                print("SHAP DEBUG")
+                print("=" * 80)
+                print(f"Conversation tokens: {num_tokens}")
+                print(f"SHAP max evaluations: {max_evals}")
+                print("=" * 80)
+
+                # -------------------------------------------------
+                # Generate explanation.
+                # -------------------------------------------------
+
+                return self.explainer(
+                    [conversation],
+                    max_evals=max_evals,
+                )
 
             except Exception as e:
+
                 import traceback
 
                 print("\n" + "=" * 80)

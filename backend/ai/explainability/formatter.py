@@ -80,9 +80,8 @@ class ExplanationFormatter:
             )
 
         return (
-            "The model classified this conversation as potentially risky "
-            "because the following keywords had the strongest influence on "
-            f"its decision: {keywords}."
+            "The following keywords had the strongest influence on "
+        f"the model's prediction: {keywords}."
         )
 
     @staticmethod
@@ -152,7 +151,7 @@ class ExplanationFormatter:
         words = filter_words(
             words,
             minimum_score=0.05,
-            positive_only=True,
+            positive_only=False,
             top_k=10,
         )
 
