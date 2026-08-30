@@ -49,7 +49,8 @@ export abstract class BaseExtractor {
     selectors: string[],
   ): Element | null {
     for (const selector of selectors) {
-      const element = parent.querySelector(selector);
+      const element =
+        parent.querySelector(selector);
 
       if (element) {
         return element;
@@ -79,7 +80,8 @@ export abstract class BaseExtractor {
     selectors: string[],
     attribute: string,
   ): string {
-    const element = this.findFirst(parent, selectors);
+    const element =
+      this.findFirst(parent, selectors);
 
     return this.attr(element, attribute);
   }
@@ -91,7 +93,10 @@ export abstract class BaseExtractor {
   protected detectDirection(
     element: Element,
   ): MessageDirection {
-    const className = element.className.toString().toLowerCase();
+    const className =
+      element.className
+        .toString()
+        .toLowerCase();
 
     if (
       className.includes("outgoing") ||
@@ -106,14 +111,81 @@ export abstract class BaseExtractor {
   }
 
   /**
-   * Generates a stable message ID if the platform
-   * does not provide one.
+   * Creates a deterministic hash.
+   *
+   * This is intentionally synchronous and does not
+   * use Date.now(), random values, or array indexes.
+   *
+   * Therefore the same message produces the same
+   * fallback ID every time it is extracted.
+   */
+  protected stableHash(value: string): string {
+    let hash = 0;
+
+    for (let i = 0; i < value.length; i++) {
+      hash =
+        (hash << 5) -
+        hash +
+        value.charCodeAt(i);
+
+      hash |= 0;
+    }
+
+    return Math.abs(hash)
+      .toString(36);
+  }
+
+  /**
+   * Generates a stable fallback message ID.
+   *
+   * IMPORTANT:
+   * Do NOT use Date.now() here.
+   *
+   * AutoMonitor extracts the conversation repeatedly.
+   * If the fallback ID changed every time, AutoMonitor
+   * would think every old message is a new message.
    */
   protected generateId(
     platform: string,
     index: number,
+    author = "",
+    content = "",
+    timestamp = "",
   ): string {
-    return `${platform.toLowerCase()}_${Date.now()}_${index}`;
+    const normalizedAuthor =
+      this.clean(author);
+
+    const normalizedContent =
+      this.clean(content);
+
+    const normalizedTimestamp =
+      this.clean(timestamp);
+
+    const fingerprint =
+      [
+        platform.toLowerCase(),
+        normalizedAuthor,
+        normalizedContent,
+        normalizedTimestamp,
+      ].join("|");
+
+    /*
+     * Index is only used as a final fallback when
+     * absolutely no message information exists.
+     *
+     * Normal messages should always have content.
+     */
+    if (
+      !normalizedAuthor &&
+      !normalizedContent &&
+      !normalizedTimestamp
+    ) {
+      return `${platform.toLowerCase()}_${index}`;
+    }
+
+    return `${platform.toLowerCase()}_${this.stableHash(
+      fingerprint,
+    )}`;
   }
 
   /**
@@ -124,22 +196,34 @@ export abstract class BaseExtractor {
     platform: string,
     index: number,
   ): ChatMessage {
+    const author =
+      data.author?.trim() ||
+      "Unknown";
+
+    const content =
+      this.clean(
+        data.content ?? "",
+      );
+
+    const timestamp =
+      data.timestamp ?? "";
+
     return {
       id:
         data.id ??
-        this.generateId(platform, index),
-
-      author:
-        data.author?.trim() ||
-        "Unknown",
-
-      content:
-        this.clean(
-          data.content ?? "",
+        this.generateId(
+          platform,
+          index,
+          author,
+          content,
+          timestamp,
         ),
 
-      timestamp:
-        data.timestamp ?? "",
+      author,
+
+      content,
+
+      timestamp,
 
       direction:
         data.direction ??
@@ -163,27 +247,47 @@ export abstract class BaseExtractor {
 
   /**
    * Removes duplicate messages.
+   *
+   * Prefer the message ID when it is available.
+   *
+   * Content is also used as a fallback because some
+   * platforms may expose the same DOM message more
+   * than once with slightly different metadata.
    */
   protected removeDuplicateMessages(
     messages: ChatMessage[],
   ): ChatMessage[] {
-    const seen = new Set<string>();
+    const seenIds = new Set<string>();
+    const seenFallbackKeys =
+      new Set<string>();
 
-    return messages.filter((message) => {
-      const key =
-        message.author +
-        "|" +
-        message.content +
-        "|" +
-        message.timestamp;
+    return messages.filter(
+      (message) => {
+        if (message.id) {
+          if (seenIds.has(message.id)) {
+            return false;
+          }
 
-      if (seen.has(key)) {
-        return false;
-      }
+          seenIds.add(message.id);
+          return true;
+        }
 
-      seen.add(key);
-      return true;
-    });
+        const key =
+          [
+            message.author,
+            message.content,
+            message.timestamp,
+          ].join("|");
+
+        if (seenFallbackKeys.has(key)) {
+          return false;
+        }
+
+        seenFallbackKeys.add(key);
+
+        return true;
+      },
+    );
   }
 
   /**
@@ -192,8 +296,13 @@ export abstract class BaseExtractor {
   protected finalizeMessages(
     messages: ChatMessage[],
   ): ChatMessage[] {
+    const nonEmpty =
+      this.removeEmptyMessages(
+        messages,
+      );
+
     return this.removeDuplicateMessages(
-      this.removeEmptyMessages(messages),
+      nonEmpty,
     );
   }
 }

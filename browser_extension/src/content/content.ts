@@ -1,6 +1,19 @@
 import { ExtractorFactory } from "../extractors/ExtractorFactory";
+import { AutoMonitor } from "./AutoMonitor";
 
-console.log("✅ AI Grooming Detection content script loaded.");
+console.log(
+  "✅ AI Grooming Detection content script loaded.",
+);
+
+console.log(
+  "🌐 Current page:",
+  window.location.href,
+);
+
+
+/* =====================================================
+   MANUAL CONVERSATION EXTRACTION
+   ===================================================== */
 
 chrome.runtime.onMessage.addListener(
   (message, _sender, sendResponse) => {
@@ -10,12 +23,13 @@ chrome.runtime.onMessage.addListener(
 
     (async () => {
       try {
-        const extractor = ExtractorFactory.getExtractor(
-          window.location.href,
-        );
+        const extractor =
+          ExtractorFactory.getExtractor(
+            window.location.href,
+          );
 
         console.log(
-          "Using extractor:",
+          "🔎 Using extractor:",
           extractor.constructor.name,
         );
 
@@ -23,7 +37,7 @@ chrome.runtime.onMessage.addListener(
           await extractor.extractConversation();
 
         console.log(
-          "Conversation extracted:",
+          "💬 Conversation extracted:",
           conversation,
         );
 
@@ -33,7 +47,7 @@ chrome.runtime.onMessage.addListener(
         });
       } catch (error) {
         console.error(
-          "Conversation extraction failed:",
+          "❌ Conversation extraction failed:",
           error,
         );
 
@@ -49,4 +63,18 @@ chrome.runtime.onMessage.addListener(
 
     return true;
   },
+);
+
+
+/* =====================================================
+   AUTOMATIC MONITORING
+   ===================================================== */
+
+const autoMonitor =
+  new AutoMonitor();
+
+autoMonitor.start();
+
+console.log(
+  "🤖 AI Grooming Detection AutoMonitor is active.",
 );

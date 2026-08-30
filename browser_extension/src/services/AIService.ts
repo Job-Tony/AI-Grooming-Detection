@@ -6,8 +6,8 @@ export class AIService {
   static async analyzeConversation(
     conversation: Conversation,
   ): Promise<PredictionWithExplanation> {
-    const response = await api.post(
-      "/ai/predict/explain",
+    const response = await api.post<PredictionWithExplanation>(
+      "/ai/predict/explain/public",
       {
         conversation: conversation.messages.map(
           (message) => message.content,

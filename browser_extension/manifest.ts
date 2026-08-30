@@ -18,30 +18,24 @@ export default defineManifest({
   permissions: [
     "storage",
     "activeTab",
+    "notifications",
   ],
 
   host_permissions: [
     "http://localhost:8000/*",
-
-    "https://discord.com/*",
-
-    "https://web.whatsapp.com/*",
-
-    "https://www.instagram.com/*",
-
-    "https://web.telegram.org/*",
+    "http://*/*",
+    "https://*/*",
   ],
+
+  background: {
+    service_worker: "src/background.ts",
+  },
 
   content_scripts: [
     {
       matches: [
-        "https://discord.com/*",
-
-        "https://web.whatsapp.com/*",
-
-        "https://www.instagram.com/*",
-
-        "https://web.telegram.org/*",
+        "http://*/*",
+        "https://*/*",
       ],
 
       js: [

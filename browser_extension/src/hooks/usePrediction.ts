@@ -34,9 +34,18 @@ export function usePrediction() {
     }
   };
 
+  // Used by AutoMonitor to push an automatic
+  // prediction into the existing RiskCard UI.
+  const setAutomaticPrediction = (
+    result: PredictionWithExplanation,
+  ) => {
+    setPrediction(result);
+  };
+
   return {
     loading,
     prediction,
     analyze,
+    setAutomaticPrediction,
   };
 }

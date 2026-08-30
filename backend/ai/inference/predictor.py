@@ -86,6 +86,13 @@ class GroomingPredictor:
         # Probability of the positive (grooming) class
         probability = probabilities[0][1].item()
 
+        print("========== MODEL DEBUG ==========")
+        print("Conversation:", conversation)
+        print("Logits:", logits)
+        print("Probabilities:", probabilities)
+        print("Positive probability:", probability)
+        print("=================================")
+
         return PredictionPostprocessor.build_result(
             probability
         )

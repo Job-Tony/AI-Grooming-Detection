@@ -95,7 +95,7 @@ export default function RiskCard({
         <div className="text-center">
 
           <div className="text-6xl font-bold text-white">
-            {result.risk_score.toFixed(1)}%
+            {result.risk_score.toFixed(4)}%
           </div>
 
           <p className="mt-2 text-slate-400">
@@ -123,7 +123,7 @@ export default function RiskCard({
           </div>
 
           <p className="mt-2 text-2xl font-bold">
-            {result.confidence.toFixed(1)}%
+            {result.confidence.toFixed(4)}%
           </p>
 
         </div>

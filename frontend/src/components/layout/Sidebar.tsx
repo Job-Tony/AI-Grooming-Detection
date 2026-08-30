@@ -5,6 +5,7 @@ import {
   Upload,
   Brain,
   History,
+  ShieldAlert,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -89,6 +90,14 @@ export default function Sidebar() {
         >
           <History size={20} />
           Analysis History
+        </NavLink>
+
+        <NavLink
+          to="/incidents"
+          className={navLinkClass}
+        >
+          <ShieldAlert size={20} />
+          Incidents
         </NavLink>
 
         <NavLink
