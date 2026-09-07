@@ -16,13 +16,26 @@ class SHAPExplainer:
     """
     SHAP explainer for the grooming detection model.
 
-    Generates token-level explanations for a conversation using
-    SHAP's Text masker.
+    Generates token-level explanations for a conversation.
 
-    A threading lock is used because SHAP's text explainer is not
-    thread-safe. This prevents concurrent requests from causing
-    intermittent failures.
+    To keep explanation generation practical on CPU deployments,
+    SHAP is limited to a fixed explanation window and evaluation
+    budget.
+
+    The complete conversation is still used for the actual
+    grooming-risk prediction. Only the text supplied to SHAP is
+    limited for performance.
     """
+
+    # -------------------------------------------------------------
+    # Performance limits
+    # -------------------------------------------------------------
+
+    # Maximum number of tokens that SHAP will explain.
+    MAX_EXPLANATION_TOKENS = 64
+
+    # Maximum number of SHAP model evaluations.
+    MAX_SHAP_EVALS = 129
 
     def __init__(
         self,
@@ -71,15 +84,13 @@ class SHAPExplainer:
         Parameters
         ----------
         texts:
-            Batch of conversations.
+            Batch of conversation texts.
 
         Returns
         -------
-        ndarray
-            Shape:
-                (batch_size, 2)
-
-            Class probabilities.
+        np.ndarray
+            Class probabilities with shape:
+            (batch_size, 2)
         """
 
         encoded = self.preprocessor.tokenizer(
@@ -90,8 +101,13 @@ class SHAPExplainer:
             return_tensors="pt",
         )
 
-        input_ids = encoded["input_ids"].to(self.device)
-        attention_mask = encoded["attention_mask"].to(self.device)
+        input_ids = encoded["input_ids"].to(
+            self.device
+        )
+
+        attention_mask = encoded["attention_mask"].to(
+            self.device
+        )
 
         logits = self.model(
             input_ids=input_ids,
@@ -105,6 +121,61 @@ class SHAPExplainer:
 
         return probabilities.detach().cpu().numpy()
 
+    def _prepare_explanation_text(
+        self,
+        conversation: str,
+    ) -> str:
+        """
+        Limit the text sent to SHAP.
+
+        The complete conversation is still used by the model for
+        the final prediction.
+
+        For long conversations, SHAP receives a balanced window:
+        - first 32 tokens
+        - last 32 tokens
+
+        This keeps the explanation fast while preserving both
+        the beginning and latest context of the conversation.
+        """
+
+        tokenized = self.preprocessor.tokenizer(
+            conversation,
+            truncation=False,
+            add_special_tokens=False,
+        )
+
+        input_ids = tokenized["input_ids"]
+
+        # ---------------------------------------------------------
+        # Short conversation
+        # ---------------------------------------------------------
+
+        if len(input_ids) <= self.MAX_EXPLANATION_TOKENS:
+            return conversation
+
+        # ---------------------------------------------------------
+        # Balanced explanation window
+        # ---------------------------------------------------------
+
+        half_window = (
+            self.MAX_EXPLANATION_TOKENS // 2
+        )
+
+        first_ids = input_ids[:half_window]
+
+        last_ids = input_ids[-half_window:]
+
+        selected_ids = first_ids + last_ids
+
+        explanation_text = self.preprocessor.tokenizer.decode(
+            selected_ids,
+            skip_special_tokens=True,
+            clean_up_tokenization_spaces=True,
+        )
+
+        return explanation_text
+
     def explain(
         self,
         conversation: str,
@@ -112,12 +183,11 @@ class SHAPExplainer:
         """
         Generate SHAP values for a conversation.
 
-        SHAP TextExplainer can become extremely expensive for long
-        conversations. Therefore, the number of evaluations is
-        limited to keep API requests practical.
+        The complete conversation is used for the actual prediction,
+        while SHAP receives a bounded explanation window.
 
-        A lock is used because SHAP's text explainer is not
-        thread-safe.
+        This significantly reduces SHAP processing time for long
+        conversations on CPU deployments such as Render.
         """
 
         with self._lock:
@@ -125,13 +195,23 @@ class SHAPExplainer:
             try:
 
                 # -------------------------------------------------
-                # Determine the number of model tokens.
+                # Prepare bounded SHAP input
+                # -------------------------------------------------
+
+                explanation_text = (
+                    self._prepare_explanation_text(
+                        conversation
+                    )
+                )
+
+                # -------------------------------------------------
+                # Count tokens used by SHAP
                 # -------------------------------------------------
 
                 tokenized = self.preprocessor.tokenizer(
-                    conversation,
+                    explanation_text,
                     truncation=True,
-                    max_length=self.preprocessor.max_length,
+                    max_length=self.MAX_EXPLANATION_TOKENS,
                     add_special_tokens=False,
                 )
 
@@ -140,35 +220,90 @@ class SHAPExplainer:
                 )
 
                 # -------------------------------------------------
-                # Limit SHAP evaluations.
-                #
-                # At least enough evaluations for a small text,
-                # but never exceed 500.
+                # Count original conversation tokens
                 # -------------------------------------------------
+
+                original_tokenized = (
+                    self.preprocessor.tokenizer(
+                        conversation,
+                        truncation=False,
+                        add_special_tokens=False,
+                    )
+                )
+
+                original_num_tokens = len(
+                    original_tokenized["input_ids"]
+                )
+
+                # -------------------------------------------------
+                # Calculate SHAP evaluation budget
+                #
+                # Required evaluations grow with the number of
+                # tokens. However, we impose a hard upper limit
+                # for CPU performance.
+                # -------------------------------------------------
+
+                required_evals = (
+                    2 * num_tokens + 1
+                )
 
                 max_evals = min(
                     max(
-                        2 * num_tokens + 1,
-                        100,
+                        required_evals,
+                        50,
                     ),
-                    500,
+                    self.MAX_SHAP_EVALS,
                 )
+
+                # -------------------------------------------------
+                # Debug information
+                # -------------------------------------------------
 
                 print("=" * 80)
                 print("SHAP DEBUG")
                 print("=" * 80)
-                print(f"Conversation tokens: {num_tokens}")
-                print(f"SHAP max evaluations: {max_evals}")
+
+                print(
+                    f"Original conversation tokens: "
+                    f"{original_num_tokens}"
+                )
+
+                print(
+                    f"SHAP explanation tokens: "
+                    f"{num_tokens}"
+                )
+
+                print(
+                    f"SHAP max evaluations: "
+                    f"{max_evals}"
+                )
+
+                if explanation_text != conversation:
+                    print(
+                        "SHAP explanation window: "
+                        f"first "
+                        f"{self.MAX_EXPLANATION_TOKENS // 2} "
+                        f"+ last "
+                        f"{self.MAX_EXPLANATION_TOKENS // 2} "
+                        f"tokens"
+                    )
+
                 print("=" * 80)
 
                 # -------------------------------------------------
-                # Generate explanation.
+                # Generate SHAP explanation
                 # -------------------------------------------------
 
-                return self.explainer(
-                    [conversation],
+                explanation = self.explainer(
+                    [explanation_text],
                     max_evals=max_evals,
                 )
+
+                print(
+                    "SHAP explanation generated successfully."
+                )
+
+                return explanation
 
             except Exception as e:
 
@@ -177,9 +312,17 @@ class SHAPExplainer:
                 print("\n" + "=" * 80)
                 print("SHAP EXPLANATION FAILED")
                 print("=" * 80)
-                print(type(e).__name__)
-                print(str(e))
+
+                print(
+                    f"Error type: {type(e).__name__}"
+                )
+
+                print(
+                    f"Error message: {str(e)}"
+                )
+
                 traceback.print_exc()
+
                 print("=" * 80 + "\n")
 
                 raise
