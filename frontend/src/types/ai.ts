@@ -13,6 +13,10 @@ export interface PredictionResponse {
   model_version: string;
 }
 
+/* -------------------------------- */
+/* SHAP Word Explanation             */
+/* -------------------------------- */
+
 export interface WordExplanationResponse {
   token: string;
   score: number;
@@ -27,27 +31,19 @@ export interface ExplanationResponse {
 }
 
 /* -------------------------------- */
-/* SHAP Explanation Timeline         */
+/* Behavioral Indicators             */
 /* -------------------------------- */
 
-export interface ExplanationTimelinePoint {
-  message_index: number;
-  risk_score: number;
+export interface BehavioralIndicatorResponse {
+  indicator_type: string;
+  title: string;
+  description: string;
+  severity: string;
+  count: number;
 }
 
 /* -------------------------------- */
 /* Early Prediction Timeline         */
-/* -------------------------------- */
-
-export interface PredictionTimelinePoint {
-  message_index: number;
-  label: string;
-  risk_score: number;
-  confidence: number;
-}
-
-/* -------------------------------- */
-/* Prediction Timeline              */
 /* -------------------------------- */
 
 export interface PredictionTimelinePoint {
@@ -59,7 +55,7 @@ export interface PredictionTimelinePoint {
 }
 
 /* -------------------------------- */
-/* Explanation Timeline             */
+/* SHAP Explanation Timeline         */
 /* -------------------------------- */
 
 export interface ExplanationTimelinePoint {
@@ -68,7 +64,7 @@ export interface ExplanationTimelinePoint {
 }
 
 /* -------------------------------- */
-/* /predict/explain Response        */
+/* /predict/explain Response         */
 /* -------------------------------- */
 
 export interface PredictionWithExplanationResponse {
@@ -76,10 +72,16 @@ export interface PredictionWithExplanationResponse {
 
   explanation: ExplanationResponse;
 
+  behavioral_indicators: BehavioralIndicatorResponse[];
+
   prediction_timeline: PredictionTimelinePoint[];
 
   explanation_timeline: ExplanationTimelinePoint[];
 }
+
+/* -------------------------------- */
+/* Model Information                 */
+/* -------------------------------- */
 
 export interface ModelInfoResponse {
   model_name: string;

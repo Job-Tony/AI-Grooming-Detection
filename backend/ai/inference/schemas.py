@@ -3,7 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
-from ai.explainability.schemas import ExplanationResult
+from ai.explainability.schemas import (
+    BehavioralIndicator,
+    ExplanationResult,
+)
 
 
 class RiskLevel(str, Enum):
@@ -34,9 +37,11 @@ class PredictionResult:
 @dataclass(slots=True)
 class PredictionWithExplanation:
     """
-    Prediction together with its SHAP explanation.
+    Prediction together with SHAP and behavioral explanations.
     """
 
     prediction: PredictionResult
 
     explanation: ExplanationResult
+
+    behavioral_indicators: list[BehavioralIndicator]

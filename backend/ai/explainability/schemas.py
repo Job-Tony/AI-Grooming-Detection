@@ -6,8 +6,8 @@ from enum import Enum
 
 class ImportanceLevel(str, Enum):
     """
-    Human-readable importance categories assigned to normalized
-    attribution scores.
+    Human-readable importance categories assigned to
+    normalized attribution scores.
     """
 
     LOW = "low"
@@ -27,6 +27,19 @@ class WordAttribution:
     normalized_score: float
     importance: ImportanceLevel
     color: str
+
+
+@dataclass(slots=True)
+class BehavioralIndicator:
+    """
+    Human-readable behavioral signal detected in the conversation.
+    """
+
+    indicator_type: str
+    title: str
+    description: str
+    severity: ImportanceLevel
+    count: int
 
 
 @dataclass(slots=True)

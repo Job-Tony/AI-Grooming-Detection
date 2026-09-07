@@ -177,10 +177,19 @@ class AIService:
                     for word in result.explanation.words
                 ],
             },
+            "behavioral_indicators": [
+                {
+                    "indicator_type": indicator.indicator_type,
+                    "title": indicator.title,
+                    "description": indicator.description,
+                    "severity": indicator.severity.value,
+                    "count": indicator.count,
+                }
+                for indicator in result.behavioral_indicators
+            ],
             "prediction_timeline": prediction_timeline,
             "explanation_timeline": explanation_timeline,
         }
-
     # ------------------------------------------------------------------
     # Prediction Timeline
     # ------------------------------------------------------------------

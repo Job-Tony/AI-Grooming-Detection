@@ -189,6 +189,7 @@ export default function PredictionPage() {
 
           <ExplanationViewer
             explanation={predictionMutation.data.explanation}
+            behavioralIndicators={predictionMutation.data.behavioral_indicators}
           />
 
           <DecisionPanel
