@@ -49,6 +49,10 @@ class PredictionResponse(BaseModel):
 # ==========================================================
 
 class WordExplanationResponse(BaseModel):
+    """
+    Individual SHAP word/token explanation.
+    """
+
     token: str
     score: float
     normalized_score: float
@@ -66,12 +70,29 @@ class ExplanationResponse(BaseModel):
 
 
 # ==========================================================
+# Behavioral Indicators
+# ==========================================================
+
+class BehavioralIndicatorResponse(BaseModel):
+    """
+    Human-readable behavioral indicators detected
+    in the conversation.
+    """
+
+    indicator_type: str
+    title: str
+    description: str
+    severity: str
+    count: int
+
+
+# ==========================================================
 # Prediction Timeline
 # ==========================================================
 
 class PredictionTimelinePointResponse(BaseModel):
     """
-    AI prediction after each checkpoint.
+    AI prediction after each conversation checkpoint.
     """
 
     message_index: int
@@ -87,7 +108,7 @@ class PredictionTimelinePointResponse(BaseModel):
 
 class ExplanationTimelinePointResponse(BaseModel):
     """
-    SHAP evidence accumulation.
+    SHAP evidence accumulation across the conversation.
     """
 
     message_index: int
@@ -100,13 +121,22 @@ class ExplanationTimelinePointResponse(BaseModel):
 
 class PredictionWithExplanationResponse(BaseModel):
     """
-    Prediction together with SHAP explanations
-    and both timelines.
+    Complete AI analysis response containing:
+
+    - Prediction
+    - SHAP explanation
+    - Behavioral indicators
+    - Prediction timeline
+    - Explanation timeline
     """
 
     prediction: PredictionResponse
 
     explanation: ExplanationResponse
+
+    behavioral_indicators: list[
+        BehavioralIndicatorResponse
+    ]
 
     prediction_timeline: list[
         PredictionTimelinePointResponse
