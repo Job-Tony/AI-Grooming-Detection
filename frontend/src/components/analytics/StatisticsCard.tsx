@@ -15,20 +15,20 @@ export default function StatisticsCard({
   explanation,
 }: StatisticsCardProps) {
   const critical = explanation.words.filter(
-    (word) => word.importance === "CRITICAL"
-  ).length;
+  (word) => word.importance.toLowerCase() === "critical"
+).length;
 
-  const high = explanation.words.filter(
-    (word) => word.importance === "HIGH"
-  ).length;
+const high = explanation.words.filter(
+  (word) => word.importance.toLowerCase() === "high"
+).length;
 
-  const medium = explanation.words.filter(
-    (word) => word.importance === "MEDIUM"
-  ).length;
+const medium = explanation.words.filter(
+  (word) => word.importance.toLowerCase() === "medium"
+).length;
 
-  const low = explanation.words.filter(
-    (word) => word.importance === "LOW"
-  ).length;
+const low = explanation.words.filter(
+  (word) => word.importance.toLowerCase() === "low"
+).length;
 
   const average =
     explanation.words.length === 0
