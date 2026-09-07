@@ -9,13 +9,23 @@ from app.parsers.parser_models import ParsedMessage
 
 class TXTParser(BaseParser):
     """
-    Parser for chat logs in the format:
+    Parser for chat logs.
 
-    [2026-07-15 18:30:12] Alex: Hi!
+    Supported formats:
+
+    1. Timestamp format:
+       [2026-07-15 18:30:12] Alex: Hi!
+
+    2. Simple format:
+       Alex: Hi!
     """
 
-    CHAT_PATTERN = re.compile(
+    TIMESTAMP_CHAT_PATTERN = re.compile(
         r"^\[(?P<timestamp>.*?)\]\s+(?P<sender>.*?):\s+(?P<message>.*)$"
+    )
+
+    SIMPLE_CHAT_PATTERN = re.compile(
+        r"^(?P<sender>[^:]+):\s*(?P<message>.*)$"
     )
 
     def parse(
@@ -34,30 +44,48 @@ class TXTParser(BaseParser):
                 if not line:
                     continue
 
-                match = self.CHAT_PATTERN.match(line)
+                # --------------------------------------------------
+                # Format 1: [timestamp] Sender: Message
+                # --------------------------------------------------
+                match = self.TIMESTAMP_CHAT_PATTERN.match(line)
 
-                if not match:
+                if match:
+                    timestamp = None
+
+                    timestamp_str = match.group("timestamp")
+
+                    try:
+                        timestamp = datetime.strptime(
+                            timestamp_str,
+                            "%Y-%m-%d %H:%M:%S",
+                        )
+                    except ValueError:
+                        pass
+
+                    messages.append(
+                        ParsedMessage(
+                            sender=match.group("sender").strip(),
+                            message=match.group("message").strip(),
+                            timestamp=timestamp,
+                            message_order=order,
+                        )
+                    )
+
                     continue
 
-                timestamp = None
+                # --------------------------------------------------
+                # Format 2: Sender: Message
+                # --------------------------------------------------
+                match = self.SIMPLE_CHAT_PATTERN.match(line)
 
-                timestamp_str = match.group("timestamp")
-
-                try:
-                    timestamp = datetime.strptime(
-                        timestamp_str,
-                        "%Y-%m-%d %H:%M:%S",
+                if match:
+                    messages.append(
+                        ParsedMessage(
+                            sender=match.group("sender").strip(),
+                            message=match.group("message").strip(),
+                            timestamp=None,
+                            message_order=order,
+                        )
                     )
-                except ValueError:
-                    pass
-
-                messages.append(
-                    ParsedMessage(
-                        sender=match.group("sender").strip(),
-                        message=match.group("message").strip(),
-                        timestamp=timestamp,
-                        message_order=order,
-                    )
-                )
 
         return messages
