@@ -43,7 +43,16 @@ export default function PredictionPage() {
       try {
         const data = await getUploadedConversation(uploadId);
 
-        setConversation(data.conversation.join("\n"));
+        const conversationText = data.conversation.join("\n");
+
+        // Display the uploaded conversation
+        setConversation(conversationText);
+
+        // Automatically analyze the uploaded conversation
+        predictionMutation.mutate({
+          upload_id: uploadId,
+          conversation: data.conversation,
+        });
       } catch (error) {
         console.error(error);
         toast.error("Unable to load uploaded conversation.");
